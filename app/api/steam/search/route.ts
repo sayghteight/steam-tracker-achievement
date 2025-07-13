@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
 
     const storeData = await storeResponse.json()
 
-    const games = await Promise.all(
+    // Filtrar solo juegos (type: 'app') y limitar resultados
+    const games =
       storeData.items
         ?.filter((item: any) => item.type === "app")
         ?.slice(0, 12)
@@ -54,14 +55,12 @@ export async function GET(request: NextRequest) {
           id: item.id.toString(),
           name: item.name,
           image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
-          price: item.price || "Gratis",
+          price: item.price?.final_formatted || "Gratis",
           description: item.short_description || "Sin descripción disponible",
           owned: ownedGameIds.includes(item.id.toString()), // Nuevo campo
         })) || []
-    
-        return NextResponse.json({ games })
-        }) || []
-    )
+
+    return NextResponse.json({ games })
   } catch (error) {
     console.error("Error searching Steam games:", error)
     return NextResponse.json({ games: [], error: "Error al buscar juegos" }, { status: 500 })
