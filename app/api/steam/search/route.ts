@@ -50,20 +50,14 @@ export async function GET(request: NextRequest) {
       storeData.items
         ?.filter((item: any) => item.type === "app")
         ?.slice(0, 12)
-        ?.map(async (item: any) => {
-          let price = "Gratis"
-          try {
-            const appDetails = await fetch(
-              `https://store.steampowered.com/api/appdetails?appids=${item.id}&cc=ES&l=spanish`
-            )
-            const appData = await appDetails.json()
-            const data = appData[item.id]?.data
-            if (data?.price_overview?.final_formatted) {
-              price = data.price_overview.final_formatted
-            }
-          } catch (e) {
-            console.warn(`Error al obtener precio para ${item.id}`)
-          }
+        ?.map((item: any) => ({
+          id: item.id.toString(),
+          name: item.name,
+          image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
+          price: item.price || "Gratis",
+          description: item.short_description || "Sin descripción disponible",
+          owned: ownedGameIds.includes(item.id.toString()), // Nuevo campo
+        })) || []
     
         return NextResponse.json({ games })
         }) || []
