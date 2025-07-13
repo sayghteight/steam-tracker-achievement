@@ -295,76 +295,82 @@ export default function HomePage() {
 
           <TabsContent value="overview" className="space-y-8 mt-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Enhanced Stat Cards */}
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-500/10 to-blue-600/5 backdrop-blur-xl border border-blue-500/20 hover:border-blue-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+              {/* Juegos Rastreados */}
+              <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-700/10 to-blue-900/5 backdrop-blur-xl border border-blue-500/30 hover:border-blue-400 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/30">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
-                  <CardTitle className="text-sm font-medium text-blue-200">Juegos Rastreados</CardTitle>
+                  <CardTitle className="text-sm font-medium text-blue-300">Juegos Rastreados</CardTitle>
                   <div className="relative">
                     <GamepadIcon className="h-6 w-6 text-blue-400 group-hover:scale-110 transition-transform duration-300" />
-                    <div className="absolute inset-0 bg-blue-400 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-blue-400 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="text-4xl font-black text-white mb-2 group-hover:text-blue-300 transition-colors duration-300">
                     {totalGamesTracked}
                   </div>
-                  <p className="text-xs text-blue-300/80">En tu biblioteca</p>
+                  <p className="text-xs text-blue-200/80">En tu biblioteca</p>
                 </CardContent>
               </Card>
-
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 backdrop-blur-xl border border-yellow-500/20 hover:border-yellow-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+              {/* Logros Totales */}
+              <Card className="group relative overflow-hidden bg-gradient-to-br from-yellow-600/10 to-yellow-800/5 backdrop-blur-xl border border-yellow-500/30 hover:border-yellow-400 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/30">
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
-                  <CardTitle className="text-sm font-medium text-yellow-200">Logros Totales</CardTitle>
+                  <CardTitle className="text-sm font-medium text-yellow-300">Logros Totales</CardTitle>
                   <div className="relative">
                     <Trophy className="h-6 w-6 text-yellow-400 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
-                    <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-yellow-400 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="text-4xl font-black text-white mb-2 group-hover:text-yellow-300 transition-colors duration-300">
                     {totalAchievements}
                   </div>
-                  <p className="text-xs text-yellow-300/80">Desbloqueados</p>
+                  <p className="text-xs text-yellow-200/80">Desbloqueados</p>
                 </CardContent>
               </Card>
-
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-green-500/10 to-green-600/5 backdrop-blur-xl border border-green-500/20 hover:border-green-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+              {/* Promedio */}
+              <Card className="group relative overflow-hidden bg-gradient-to-br from-emerald-600/10 to-emerald-800/5 backdrop-blur-xl border border-emerald-500/30 hover:border-emerald-400 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-emerald-500/30">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
-                  <CardTitle className="text-sm font-medium text-green-200">Promedio</CardTitle>
+                  <CardTitle className="text-sm font-medium text-emerald-300">Promedio</CardTitle>
                   <div className="relative">
-                    <BarChart3 className="h-6 w-6 text-green-400 group-hover:scale-110 transition-transform duration-300" />
-                    <div className="absolute inset-0 bg-green-400 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                    <BarChart3 className="h-6 w-6 text-emerald-400 group-hover:scale-110 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-emerald-400 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10">
-                  <div className="text-4xl font-black text-white mb-2 group-hover:text-green-300 transition-colors duration-300">
+                  <div className="text-4xl font-black text-white mb-2 group-hover:text-emerald-300 transition-colors duration-300">
                     {averageCompletion}
                   </div>
-                  <p className="text-xs text-green-300/80">Logros por juego</p>
+                  <p className="text-xs text-emerald-200/80">Logros por juego</p>
                 </CardContent>
               </Card>
-
-              <Card className="group relative overflow-hidden bg-gradient-to-br from-purple-500/10 to-purple-600/5 backdrop-blur-xl border border-purple-500/20 hover:border-purple-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+              {/* Platinos */}
+              <Card className="group relative overflow-hidden bg-gradient-to-br from-purple-700/10 to-purple-900/5 backdrop-blur-xl border border-purple-500/30 hover:border-purple-400 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/30">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
-                  <CardTitle className="text-sm font-medium text-purple-200">Platinos</CardTitle>
+                  <CardTitle className="text-sm font-medium text-purple-300">Platinos</CardTitle>
                   <div className="relative">
                     <Star className="h-6 w-6 text-purple-400 group-hover:scale-110 group-hover:rotate-180 transition-all duration-500" />
-                    <div className="absolute inset-0 bg-purple-400 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-purple-400 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="text-4xl font-black text-white mb-2 group-hover:text-purple-300 transition-colors duration-300">
                     0
                   </div>
-                  <p className="text-xs text-purple-300/80">Conseguidos</p>
+                  <p className="text-xs text-purple-200/80">Conseguidos</p>
                 </CardContent>
               </Card>
+          
             </div>
           </TabsContent>
+
 
           <TabsContent value="detailed" className="space-y-8 mt-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
