@@ -414,7 +414,7 @@ export default function GamePage() {
                       <span className="text-slate-300 text-lg">Cargando logros...</span>
                     </div>
                   ) : achievements.length > 0 ? (
-                    <Card className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20">
+                    <Card className="bg-white/5 backdrop-blur-xl border border-white/10">
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-2xl font-bold text-white flex items-center gap-3">
@@ -533,7 +533,7 @@ export default function GamePage() {
                             <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white hover:bg-white/20 transition-colors rounded-xl">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-slate-900/95 backdrop-blur-xl border-white/20">
+                            <SelectContent className="bg-slate-900/95 text-white backdrop-blur-xl border-white/20">
                               <SelectItem value="all">Todos los logros</SelectItem>
                               <SelectItem value="completed">✅ Completados</SelectItem>
                               <SelectItem value="pending">⏳ Pendientes</SelectItem>
@@ -550,7 +550,7 @@ export default function GamePage() {
                             <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white hover:bg-white/20 transition-colors rounded-xl">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-slate-900/95 backdrop-blur-xl border-white/20">
+                            <SelectContent className="bg-slate-900/95 text-white backdrop-blur-xl border-white/20">
                               <SelectItem value="name">📝 Nombre</SelectItem>
                               <SelectItem value="rarity">💎 Rareza</SelectItem>
                               <SelectItem value="percentage">📊 Porcentaje</SelectItem>
@@ -767,11 +767,7 @@ export default function GamePage() {
                         >
                           {/* Glow Effect */}
                           <div
-                            className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
-                              isCompleted
-                                ? "bg-gradient-to-br from-green-500/5 to-emerald-500/5"
-                                : "bg-gradient-to-br from-blue-500/5 to-purple-500/5"
-                            }`}
+                            className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
                           ></div>
 
                           <CardContent className="p-6 relative z-10">
