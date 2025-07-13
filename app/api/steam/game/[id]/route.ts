@@ -26,6 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       screenshots: gameData.data.screenshots?.map((s: any) => s.path_full) || [],
       developers: gameData.data.developers || [],
       publishers: gameData.data.publishers || [],
+      price: gameData.data.price || 'free',
       release_date: gameData.data.release_date?.date || "Fecha desconocida",
       genres: gameData.data.genres?.map((g: any) => g.description) || [],
     }
