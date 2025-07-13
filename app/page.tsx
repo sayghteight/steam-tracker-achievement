@@ -197,7 +197,7 @@ export default function HomePage() {
                   <div className="flex items-center gap-3">
                     <Filter className="h-5 w-5 text-blue-400" />
                     <Select value={sortBy} onValueChange={(value: SortBy) => setSortBy(value)}>
-                      <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white hover:bg-white/20 transition-colors">
+                      <SelectTrigger className="w-48 border-white/20 text-white transition-colors">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-900/95 backdrop-blur-xl border-white/20">
