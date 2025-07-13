@@ -587,14 +587,6 @@ export default function HomePage() {
                   className="group relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 animate-fade-in"
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
-                  {game.owned && (
-                    <div className="absolute top-2 left-2">
-                      <Badge className="bg-gradient-to-r from-green-600/90 to-emerald-600/90 backdrop-blur-sm border border-white/20 text-white font-semibold text-xs">
-                        <Shield className="h-3 w-3 mr-1" />
-                        En tu biblioteca
-                      </Badge>
-                    </div>
-                  )}
                   <CardHeader className="p-0">
                     <div className="relative overflow-hidden">
                       <img
@@ -676,6 +668,14 @@ export default function HomePage() {
                           <Badge className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-semibold">
                             {game.price}
                           </Badge>
+                        )}
+                        {game.owned && (
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-gradient-to-r from-green-600/90 to-emerald-600/90 backdrop-blur-sm border border-white/20 text-white font-semibold text-xs">
+                              <Shield className="h-3 w-3 mr-1" />
+                              En tu biblioteca
+                            </Badge>
+                          </div>
                         )}
                         {userProgress[game.id] && (
                           <div className="text-sm text-slate-300 font-medium">
