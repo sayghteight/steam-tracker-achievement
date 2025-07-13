@@ -65,14 +65,7 @@ export async function GET(request: NextRequest) {
             console.warn(`Error al obtener precio para ${item.id}`)
           }
     
-          return {
-            id: item.id.toString(),
-            name: item.name,
-            image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
-            price,
-            description: item.short_description || "Sin descripción disponible",
-            owned: ownedGameIds.includes(item.id.toString()),
-          }
+        return NextResponse.json({ games })
         }) || []
     )
   } catch (error) {
