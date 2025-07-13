@@ -46,21 +46,35 @@ export async function GET(request: NextRequest) {
 
     const storeData = await storeResponse.json()
 
-    // Filtrar solo juegos (type: 'app') y limitar resultados
-    const games =
+    const games = await Promise.all(
       storeData.items
         ?.filter((item: any) => item.type === "app")
         ?.slice(0, 12)
-        ?.map((item: any) => ({
-          id: item.id.toString(),
-          name: item.name,
-          image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
-          price: item.price?.final_formatted || "Gratis",
-          description: item.short_description || "Sin descripción disponible",
-          owned: ownedGameIds.includes(item.id.toString()), // Nuevo campo
-        })) || []
-
-    return NextResponse.json({ games })
+        ?.map(async (item: any) => {
+          let price = "Gratis"
+          try {
+            const appDetails = await fetch(
+              `https://store.steampowered.com/api/appdetails?appids=${item.id}&cc=ES&l=spanish`
+            )
+            const appData = await appDetails.json()
+            const data = appData[item.id]?.data
+            if (data?.price_overview?.final_formatted) {
+              price = data.price_overview.final_formatted
+            }
+          } catch (e) {
+            console.warn(`Error al obtener precio para ${item.id}`)
+          }
+    
+          return {
+            id: item.id.toString(),
+            name: item.name,
+            image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
+            price,
+            description: item.short_description || "Sin descripción disponible",
+            owned: ownedGameIds.includes(item.id.toString()),
+          }
+        }) || []
+    )
   } catch (error) {
     console.error("Error searching Steam games:", error)
     return NextResponse.json({ games: [], error: "Error al buscar juegos" }, { status: 500 })
