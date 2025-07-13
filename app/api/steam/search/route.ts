@@ -46,6 +46,8 @@ export async function GET(request: NextRequest) {
 
     const storeData = await storeResponse.json()
 
+    console.log(storeData.items)
+    
     // Filtrar solo juegos (type: 'app') y limitar resultados
     const games =
       storeData.items
