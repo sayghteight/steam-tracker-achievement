@@ -745,7 +745,7 @@ export default function HomePage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setSearchTerm(suggestion)}
-                  className="text-slate-300 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-300 hover:scale-105 px-6 py-2 rounded-full"
+                  className="text-slate-300 border-white/20 hover:bg-white/10 hover:border-white/30 text-white transition-all duration-300 hover:scale-105 px-6 py-2 rounded-full"
                 >
                   {suggestion}
                 </Button>
