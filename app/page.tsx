@@ -296,7 +296,7 @@ export default function HomePage() {
           <TabsContent value="overview" className="space-y-8 mt-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Enhanced Stat Cards */}
-              <Card className="group relative bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 backdrop-blur-xl border border-yellow-500/20 hover:border-yellow-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/20">
+              <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 backdrop-blur-xl border border-yellow-500/20 hover:border-yellow-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
                   <CardTitle className="text-sm font-medium text-blue-200">Juegos Rastreados</CardTitle>
                   <div className="relative">
@@ -312,7 +312,7 @@ export default function HomePage() {
                 </CardContent>
               </Card>
 
-              <Card className="group relative bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 backdrop-blur-xl border border-yellow-500/20 hover:border-yellow-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/20">
+              <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 backdrop-blur-xl border border-yellow-500/20 hover:border-yellow-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-500/20">
                 <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
                   <CardTitle className="text-sm font-medium text-yellow-200">Logros Totales</CardTitle>
@@ -329,7 +329,7 @@ export default function HomePage() {
                 </CardContent>
               </Card>
 
-              <Card className="group relative bg-gradient-to-br from-green-500/10 to-green-600/5 backdrop-blur-xl border border-green-500/20 hover:border-green-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/20">
+              <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 backdrop-blur-xl border border-green-500/20 hover:border-green-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/20">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
                   <CardTitle className="text-sm font-medium text-green-200">Promedio</CardTitle>
@@ -346,7 +346,7 @@ export default function HomePage() {
                 </CardContent>
               </Card>
 
-              <Card className="group relative bg-gradient-to-br from-purple-500/10 to-purple-600/5 backdrop-blur-xl border border-purple-500/20 hover:border-purple-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20">
+              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 backdrop-blur-xl border border-purple-500/20 hover:border-purple-400/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20">
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
                   <CardTitle className="text-sm font-medium text-purple-200">Platinos</CardTitle>
