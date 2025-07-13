@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
           name: item.name,
           image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
           price: item.price?.final_formatted || "Gratis",
-          description: item.short_description || "Sin descripción disponible",
+          description: item.data.short_description || item.data.detailed_description,
           owned: ownedGameIds.includes(item.id.toString()), // Nuevo campo
         })) || []
 
