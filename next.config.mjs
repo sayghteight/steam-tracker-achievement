@@ -11,7 +11,8 @@ const nextConfig = {
       'shared.akamai.steamstatic.com',
       'steamcdn-a.akamaihd.net',
       'avatars.steamstatic.com',
-      'steamuserimages-a.akamaihd.net'
+      'steamuserimages-a.akamaihd.net',
+      'cdn.cloudflare.steamstatic.com'
     ],
     unoptimized: true
   },
