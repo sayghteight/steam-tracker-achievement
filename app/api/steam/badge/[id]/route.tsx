@@ -5,51 +5,145 @@ export const runtime = "edge"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const gameId = params.id
+  const { searchParams } = new URL(request.url)
+  const gameName = searchParams.get("gameName") || "Juego Desconocido"
 
   try {
-    const gameResponse = await fetch(`${request.nextUrl.origin}/api/steam/game/${gameId}`)
-    const gameData = await gameResponse.json()
-
-    if (gameData.error || !gameData.game) {
-      return new ImageResponse(
-        <div tw="flex items-center justify-center w-[600px] h-[300px] text-white bg-gradient-to-r from-red-500 to-orange-400 text-2xl p-5">
-          Error al cargar el juego
-        </div>,
-        {
-          width: 600,
-          height: 300,
-        },
-      )
+    // Fetch game details to get the actual game name if not provided
+    let displayGameName = gameName
+    if (gameName === "Juego Desconocido") {
+      const gameResponse = await fetch(`${request.nextUrl.origin}/api/steam/game/${gameId}`)
+      if (gameResponse.ok) {
+        const gameData = await gameResponse.json()
+        if (gameData.game && gameData.game.name) {
+          displayGameName = gameData.game.name
+        }
+      }
     }
 
-    const gameName = gameData.game.name
-
     return new ImageResponse(
-      <div tw="flex flex-col items-center justify-center w-[800px] h-[400px] bg-gradient-to-r from-purple-500 to-pink-500 text-white p-10 border-4 border-purple-300">
-        <div tw="flex items-center mb-5">
-          <div tw="text-yellow-300 text-6xl mr-5">⭐</div>
-          <span tw="text-5xl font-bold drop-shadow">¡PLATINO CONSEGUIDO!</span>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+          background: "linear-gradient(to bottom right, #1a202c, #2d3748)", // Dark gradient background
+          color: "white",
+          fontFamily: "sans-serif",
+          padding: "40px",
+          textAlign: "center",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Background particles/glow */}
+        <div
+          style={{
+            position: "absolute",
+            top: "20%",
+            left: "10%",
+            width: "150px",
+            height: "150px",
+            background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)",
+            filter: "blur(50px)",
+            opacity: "0.3",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: "15%",
+            right: "10%",
+            width: "200px",
+            height: "200px",
+            background: "radial-gradient(circle, #3b82f6 0%, transparent 70%)",
+            filter: "blur(60px)",
+            opacity: "0.3",
+          }}
+        />
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+            border: "2px solid #a78bfa", // Purple border
+            borderRadius: "15px",
+            padding: "30px 50px",
+            background: "rgba(0,0,0,0.4)", // Semi-transparent dark background
+            boxShadow: "0 10px 20px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "60px",
+              fontWeight: "bold",
+              marginBottom: "10px",
+              background: "linear-gradient(to right, #fde047, #fbbf24)", // Gold gradient for text
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              display: "flex",
+              alignItems: "center",
+              gap: "15px",
+            }}
+          >
+            <span style={{ fontSize: "80px" }}>⭐</span>
+            PLATINO CONSEGUIDO
+            <span style={{ fontSize: "80px" }}>⭐</span>
+          </div>
+          <div
+            style={{
+              fontSize: "32px",
+              color: "#cbd5e1", // Slate-300
+              maxWidth: "600px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            en {displayGameName}
+          </div>
+          <div
+            style={{
+              fontSize: "20px",
+              color: "#9ca3af", // Gray-400
+              marginTop: "20px",
+            }}
+          >
+            steam-achievement-tracker.vercel.app
+          </div>
         </div>
-        <span tw="text-2xl text-purple-200 text-center">en {gameName}</span>
-        <div tw="flex mt-8 text-lg text-purple-400">Steam Achievement Tracker</div>
       </div>,
       {
-        width: 800,
-        height: 400,
-        headers: {
-          "Cache-Control": "public, max-age=3600",
-        },
+        width: 1200,
+        height: 630,
       },
     )
-  } catch (error) {
-    console.error("Error generating badge:", error)
+  } catch (e: any) {
+    console.error("Error generating image:", e)
     return new ImageResponse(
-      <div tw="flex items-center justify-center w-[600px] h-[300px] text-white bg-gradient-to-r from-red-500 to-orange-400 text-2xl p-5">
-        Error interno del servidor
+      <div
+        style={{
+          fontSize: 48,
+          background: "black",
+          color: "white",
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        Error al generar el badge: {e.message}
       </div>,
       {
-        width: 600,
-        height: 300,
+        width: 1200,
+        height: 630,
       },
     )
   }
