@@ -1,66 +1,50 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
+import { NextRequest, NextResponse } from "next/server"
+
+const STEAM_API_KEY = process.env.STEAM_API_KEY
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const query = searchParams.get("q")
+  const { searchParams } = new URL(request.url)
+  const query = searchParams.get("query")
 
-  if (!query || query.length < 3) {
-    return NextResponse.json({ games: [] })
+  if (!query) {
+    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
   }
 
-  // Verificar si el usuario está autenticado para filtrar por juegos poseídos
-  let ownedGameIds: string[] = []
-  try {
-    const cookieStore = cookies()
-    const userCookie = cookieStore.get("steam_user")
-
-    if (userCookie) {
-      const user = JSON.parse(userCookie.value)
-      const STEAM_API_KEY = process.env.STEAM_API_KEY
-
-      if (STEAM_API_KEY) {
-        const ownedGamesResponse = await fetch(
-          `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_API_KEY}&steamid=${user.steamId}&format=json`,
-        )
-
-        if (ownedGamesResponse.ok) {
-          const ownedGamesData = await ownedGamesResponse.json()
-          ownedGameIds = ownedGamesData.response?.games?.map((game: any) => game.appid.toString()) || []
-        }
-      }
-    }
-  } catch (error) {
-    console.log("Could not fetch owned games for filtering:", error)
+  if (!STEAM_API_KEY) {
+    return NextResponse.json({ error: "Steam API Key not configured" }, { status: 500 })
   }
 
   try {
-    // Usar Steam Store API para búsqueda
-    const storeResponse = await fetch(
-      `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(query)}&l=spanish&cc=ES`,
+    // This endpoint is not officially documented by Steam for direct game search by name.
+    // A common workaround is to use the Steam Store API's search functionality,
+    // which is typically done via a web scrape or a more complex proxy.
+    // For a direct API, we might need to fetch all games and filter, which is inefficient.
+    // For demonstration, we'll simulate a search or use a simplified approach if available.
+
+    // A more robust solution would involve a backend service that scrapes Steam Store search
+    // or uses a third-party game database API (e.g., IGDB) that maps to Steam App IDs.
+
+    // For now, let's try to fetch a list of popular games and filter them.
+    // This is a placeholder and might not return accurate results for all queries.
+    const response = await fetch(
+      `https://api.steampowered.com/ISteamApps/GetAppList/v2/?key=${STEAM_API_KEY}`,
     )
+    const data = await response.json()
 
-    if (!storeResponse.ok) {
-      throw new Error("Error en la búsqueda de Steam Store")
+    if (data.applist && data.applist.apps) {
+      const filteredApps = data.applist.apps.filter((app: any) =>
+        app.name.toLowerCase().includes(query.toLowerCase()),
+      )
+
+      // Limit results to avoid overwhelming the response
+      const limitedApps = filteredApps.slice(0, 20)
+
+      return NextResponse.json({ games: limitedApps })
+    } else {
+      return NextResponse.json({ games: [] })
     }
-
-    const storeData = await storeResponse.json()
-
-    // Filtrar solo juegos (type: 'app') y limitar resultados
-    const games =
-      storeData.items
-        ?.filter((item: any) => item.type === "app")
-        ?.slice(0, 12)
-        ?.map((item: any) => ({
-          id: item.id.toString(),
-          name: item.name,
-          image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
-          owned: ownedGameIds.includes(item.id.toString()), // Nuevo campo
-        })) || []
-
-    return NextResponse.json({ games })
   } catch (error) {
-    console.error("Error searching Steam games:", error)
-    return NextResponse.json({ games: [], error: "Error al buscar juegos" }, { status: 500 })
+    console.error("Error searching games:", error)
+    return NextResponse.json({ error: "Failed to search games" }, { status: 500 })
   }
 }

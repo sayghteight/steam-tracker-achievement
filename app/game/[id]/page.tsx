@@ -1,17 +1,8 @@
 "use client"
 
 import { Separator } from "@/components/ui/separator"
-
-import { TabsContent } from "@/components/ui/tabs"
-
-import { TabsTrigger } from "@/components/ui/tabs"
-
-import { TabsList } from "@/components/ui/tabs"
-
-import { Tabs } from "@/components/ui/tabs"
-
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-
 import Link from "next/link"
 
 import { useState, useEffect } from "react"
@@ -103,6 +94,7 @@ export default function GamePage() {
   const [showHidden, setShowHidden] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [badgeUrl, setBadgeUrl] = useState<string>("")
+  const [badgeLoading, setBadgeLoading] = useState(false)
 
   useEffect(() => {
     setIsClient(true) // Marcar que estamos en el cliente una vez montado
@@ -311,12 +303,35 @@ export default function GamePage() {
     URL.revokeObjectURL(url)
   }
 
-  const handleSharePlatinum = () => {
+  const handleSharePlatinum = async () => {
     if (isPlatinum) {
-      const currentOrigin = window.location.origin
-      const badgeApiUrl = `${currentOrigin}/api/steam/badge/${gameId}`
-      setBadgeUrl(badgeApiUrl)
+      setBadgeLoading(true)
       setShowShareDialog(true)
+
+      try {
+        const currentOrigin = window.location.origin
+        // Asegurarse de que el nombre del juego esté codificado correctamente en la URL
+        const encodedGameName = encodeURIComponent(game.name)
+        const badgeApiUrl = `${currentOrigin}/api/steam/badge/${gameId}?gameName=${encodedGameName}`
+
+        // Verificar que la URL del badge es válida
+        const response = await fetch(badgeApiUrl)
+        if (!response.ok) {
+          throw new Error(`Error al generar el badge: ${response.statusText}`)
+        }
+
+        // Establecer la URL del badge
+        setBadgeUrl(badgeApiUrl)
+      } catch (error) {
+        console.error("Error al generar el badge:", error)
+        toast({
+          title: "Error al generar el badge",
+          description: "No se pudo generar la imagen del platino. Inténtalo de nuevo más tarde.",
+          variant: "destructive",
+        })
+      } finally {
+        setBadgeLoading(false)
+      }
     } else {
       toast({
         title: "¡Aún no has conseguido el Platino!",
@@ -1043,13 +1058,23 @@ export default function GamePage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
-              {badgeUrl ? (
+              {badgeLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-400" />
+                  <p className="text-slate-400">Generando badge de platino...</p>
+                </div>
+              ) : badgeUrl ? (
                 <>
                   <div className="flex justify-center">
                     <img
                       src={badgeUrl || "/placeholder.svg"}
                       alt="Platinum Achievement Badge"
                       className="max-w-full h-auto rounded-lg border border-white/20 shadow-lg"
+                      onError={(e) => {
+                        console.error("Error al cargar la imagen del badge")
+                        const target = e.target as HTMLImageElement
+                        target.src = "/placeholder.svg?height=630&width=1200"
+                      }}
                     />
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1064,7 +1089,7 @@ export default function GamePage() {
                   </div>
                 </>
               ) : (
-                <div className="text-center text-slate-400">Generando badge...</div>
+                <div className="text-center text-slate-400">Error al generar el badge</div>
               )}
             </div>
           </DialogContent>

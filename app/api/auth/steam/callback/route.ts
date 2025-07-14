@@ -1,38 +1,52 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const STEAM_API_KEY = process.env.STEAM_API_KEY
+const STEAM_API_KEY = process.env.STEAM_API_KEY
 
-  if (!STEAM_API_KEY) {
-    return NextResponse.redirect(new URL("/login?error=no_api_key", request.url))
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const openid_assoc_handle = searchParams.get("openid.assoc_handle")
+  const openid_signed = searchParams.get("openid.signed")
+  const openid_sig = searchParams.get("openid.sig")
+  const openid_mode = searchParams.get("openid.mode")
+  const openid_ns = searchParams.get("openid.ns")
+  const openid_op_endpoint = searchParams.get("openid.op_endpoint")
+  const openid_claimed_id = searchParams.get("openid.claimed_id")
+  const openid_identity = searchParams.get("openid.identity")
+  const openid_return_to = searchParams.get("openid.return_to")
+  const openid_response_nonce = searchParams.get("openid.response_nonce")
+
+  if (openid_mode === "cancel") {
+    return NextResponse.redirect(new URL("/login", request.url))
   }
 
+  if (!openid_claimed_id) {
+    return NextResponse.json({ error: "OpenID claimed ID not found" }, { status: 400 })
+  }
+
+  // Extract SteamID from claimed_id
+  const steamIdMatch = openid_claimed_id.match(
+    /^https?:\/\/steamcommunity\.com\/openid\/id\/(\d+)$/,
+  )
+  if (!steamIdMatch || !steamIdMatch[1]) {
+    return NextResponse.json({ error: "Invalid SteamID format" }, { status: 400 })
+  }
+  const steamId = steamIdMatch[1]
+
+  // Verify the OpenID response
+  const verificationParams = new URLSearchParams()
+  verificationParams.append("openid.assoc_handle", openid_assoc_handle || "")
+  verificationParams.append("openid.signed", openid_signed || "")
+  verificationParams.append("openid.sig", openid_sig || "")
+  verificationParams.append("openid.mode", "check_authentication")
+  verificationParams.append("openid.ns", openid_ns || "")
+  verificationParams.append("openid.op_endpoint", openid_op_endpoint || "")
+  verificationParams.append("openid.claimed_id", openid_claimed_id || "")
+  verificationParams.append("openid.identity", openid_identity || "")
+  verificationParams.append("openid.return_to", openid_return_to || "")
+  verificationParams.append("openid.response_nonce", openid_response_nonce || "")
+
   try {
-    // Verificar la respuesta de Steam OpenID
-    const openidMode = searchParams.get("openid.mode")
-    const openidIdentity = searchParams.get("openid.identity")
-
-    if (openidMode !== "id_res" || !openidIdentity) {
-      return NextResponse.redirect(new URL("/login?error=invalid_response", request.url))
-    }
-
-    // Extraer Steam ID de la identidad
-    const steamIdMatch = openidIdentity.match(/\/id\/(\d+)$/)
-    if (!steamIdMatch) {
-      return NextResponse.redirect(new URL("/login?error=invalid_steam_id", request.url))
-    }
-
-    const steamId = steamIdMatch[1]
-
-    // Verificar la autenticación con Steam
-    const verificationParams = new URLSearchParams()
-    for (const [key, value] of searchParams.entries()) {
-      verificationParams.append(key, value)
-    }
-    verificationParams.set("openid.mode", "check_authentication")
-
     const verificationResponse = await fetch("https://steamcommunity.com/openid/login", {
       method: "POST",
       headers: {
@@ -42,78 +56,21 @@ export async function GET(request: NextRequest) {
     })
 
     const verificationText = await verificationResponse.text()
-    if (!verificationText.includes("is_valid:true")) {
-      return NextResponse.redirect(new URL("/login?error=verification_failed", request.url))
+
+    if (verificationText.includes("is_valid:true")) {
+      // Authentication successful, set cookie and redirect
+      cookies().set("steamId", steamId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: "/",
+      })
+      return NextResponse.redirect(new URL("/", request.url))
+    } else {
+      return NextResponse.json({ error: "Steam authentication failed" }, { status: 401 })
     }
-
-    // Obtener información del usuario desde Steam API
-    const playerResponse = await fetch(
-      `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${STEAM_API_KEY}&steamids=${steamId}`,
-    )
-
-    if (!playerResponse.ok) {
-      return NextResponse.redirect(new URL("/login?error=steam_api_error", request.url))
-    }
-
-    const playerData = await playerResponse.json()
-    const player = playerData.response?.players?.[0]
-
-    if (!player) {
-      return NextResponse.redirect(new URL("/login?error=player_not_found", request.url))
-    }
-
-    // Obtener juegos del usuario
-    let gameCount = 0
-    try {
-      const gamesResponse = await fetch(
-        `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_API_KEY}&steamid=${steamId}&include_appinfo=1&include_played_free_games=1`,
-      )
-      if (gamesResponse.ok) {
-        const gamesData = await gamesResponse.json()
-        gameCount = gamesData.response?.game_count || 0
-      }
-    } catch (error) {
-      console.log("Could not fetch games count:", error)
-    }
-
-    // Obtener nivel de Steam
-    let level = 1
-    try {
-      const levelResponse = await fetch(
-        `https://api.steampowered.com/IPlayerService/GetSteamLevel/v1/?key=${STEAM_API_KEY}&steamid=${steamId}`,
-      )
-      if (levelResponse.ok) {
-        const levelData = await levelResponse.json()
-        level = levelData.response?.player_level || 1
-      }
-    } catch (error) {
-      console.log("Could not fetch Steam level:", error)
-    }
-
-    // Crear objeto de usuario
-    const user = {
-      steamId: steamId,
-      displayName: player.personaname,
-      avatar: player.avatarfull,
-      profileUrl: player.profileurl,
-      gameCount: gameCount,
-      level: level,
-      achievementCount: 0, // Se calculará después
-      lastLogin: new Date().toISOString(),
-    }
-
-    // Guardar en cookies (en producción usar una base de datos)
-    const cookieStore = cookies()
-    cookieStore.set("steam_user", JSON.stringify(user), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 días
-    })
-
-    return NextResponse.redirect(new URL("/login?success=true", request.url))
   } catch (error) {
-    console.error("Steam auth error:", error)
-    return NextResponse.redirect(new URL("/login?error=server_error", request.url))
+    console.error("Error during Steam authentication callback:", error)
+    return NextResponse.json({ error: "Authentication failed due to server error" }, { status: 500 })
   }
 }

@@ -1,19 +1,13 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
+  const returnToUrl = new URL("/api/auth/steam/callback", request.url).toString()
 
-  // Parámetros para Steam OpenID
-  const steamOpenIdParams = new URLSearchParams({
-    "openid.ns": "http://specs.openid.net/auth/2.0",
-    "openid.mode": "checkid_setup",
-    "openid.return_to": `${baseUrl}/api/auth/steam/callback`,
-    "openid.realm": baseUrl,
-    "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
-    "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
-  })
+  const steamLoginUrl = `https://steamcommunity.com/openid/login?openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&openid.mode=checkid_setup&openid.return_to=${encodeURIComponent(
+    returnToUrl,
+  )}&openid.realm=${encodeURIComponent(
+    new URL(request.url).origin,
+  )}&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select`
 
-  const steamAuthUrl = `https://steamcommunity.com/openid/login?${steamOpenIdParams.toString()}`
-
-  return NextResponse.redirect(steamAuthUrl)
+  return NextResponse.redirect(steamLoginUrl)
 }

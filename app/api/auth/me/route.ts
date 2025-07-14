@@ -1,19 +1,40 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
-export async function GET(request: NextRequest) {
+const STEAM_API_KEY = process.env.STEAM_API_KEY
+
+export async function GET() {
+  const steamId = cookies().get("steamId")?.value
+
+  if (!steamId) {
+    return NextResponse.json({ isLoggedIn: false }, { status: 200 })
+  }
+
+  if (!STEAM_API_KEY) {
+    return NextResponse.json({ error: "Steam API Key not configured" }, { status: 500 })
+  }
+
   try {
-    const cookieStore = cookies()
-    const userCookie = cookieStore.get("steam_user")
+    const response = await fetch(
+      `http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${steamId}`,
+    )
+    const data = await response.json()
 
-    if (!userCookie) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    if (data.response.players && data.response.players.length > 0) {
+      const player = data.response.players[0]
+      return NextResponse.json({
+        isLoggedIn: true,
+        player: {
+          steamId: player.steamid,
+          personaName: player.personaname,
+          avatar: player.avatarmedium,
+        },
+      })
+    } else {
+      return NextResponse.json({ isLoggedIn: false }, { status: 200 })
     }
-
-    const user = JSON.parse(userCookie.value)
-    return NextResponse.json(user)
   } catch (error) {
-    console.error("Auth check error:", error)
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
+    console.error("Error fetching user data:", error)
+    return NextResponse.json({ error: "Failed to fetch user data" }, { status: 500 })
   }
 }

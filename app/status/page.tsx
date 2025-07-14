@@ -1,148 +1,125 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { CheckCircle, XCircle, AlertCircle, Loader2, RefreshCw, Server, Clock } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, Clock, RefreshCcw } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
-interface ServiceStatus {
-  name: string
-  status: "Operational" | "Degraded Performance" | "Outage"
-  description: string
-}
-
-interface StatusData {
+interface Status {
+  status: "operational" | "degraded" | "offline"
+  message: string
   timestamp: string
-  services: ServiceStatus[]
 }
 
 export default function StatusPage() {
-  const [statusData, setStatusData] = useState<StatusData | null>(null)
+  const [status, setStatus] = useState<Status | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = async () => {
     setIsLoading(true)
     setError(null)
     try {
       const response = await fetch("/api/steam/status")
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      const data = await response.json()
+      if (response.ok) {
+        setStatus(data)
+      } else {
+        setError(data.message || "Failed to fetch status.")
+        setStatus({ status: "offline", message: data.message || "Unknown error", timestamp: new Date().toISOString() })
       }
-      const data: StatusData = await response.json()
-      setStatusData(data)
     } catch (err) {
-      console.error("Error fetching Steam status:", err)
-      setError("No se pudo cargar el estado de los servicios de Steam. Inténtalo de nuevo más tarde.")
+      console.error("Error fetching status:", err)
+      setError("Network error or server unreachable.")
+      setStatus({ status: "offline", message: "Network error or server unreachable.", timestamp: new Date().toISOString() })
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }
 
   useEffect(() => {
     fetchStatus()
-    // Opcional: Refrescar el estado cada cierto tiempo (ej. cada 5 minutos)
-    const interval = setInterval(fetchStatus, 5 * 60 * 1000)
-    return () => clearInterval(interval)
-  }, [fetchStatus])
+  }, [])
 
-  const getStatusColor = (status: ServiceStatus["status"]) => {
+  const getStatusIcon = (status: Status["status"]) => {
     switch (status) {
-      case "Operational":
-        return "bg-green-600 hover:bg-green-700"
-      case "Degraded Performance":
-        return "bg-yellow-600 hover:bg-yellow-700"
-      case "Outage":
-        return "bg-red-600 hover:bg-red-700"
+      case "operational":
+        return <CheckCircle className="h-12 w-12 text-green-500" />
+      case "degraded":
+        return <Clock className="h-12 w-12 text-yellow-500" />
+      case "offline":
+        return <XCircle className="h-12 w-12 text-red-500" />
       default:
-        return "bg-gray-500"
+        return <Loader2 className="h-12 w-12 text-gray-500 animate-spin" />
     }
   }
 
-  const getStatusIcon = (status: ServiceStatus["status"]) => {
+  const getStatusColor = (status: Status["status"]) => {
     switch (status) {
-      case "Operational":
-        return <CheckCircle className="h-5 w-5" />
-      case "Degraded Performance":
-        return <AlertCircle className="h-5 w-5" />
-      case "Outage":
-        return <XCircle className="h-5 w-5" />
+      case "operational":
+        return "bg-green-500/20 border-green-500/40"
+      case "degraded":
+        return "bg-yellow-500/20 border-yellow-500/40"
+      case "offline":
+        return "bg-red-500/20 border-red-500/40"
       default:
-        return <Server className="h-5 w-5" />
+        return "bg-gray-500/20 border-gray-500/40"
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-purple-950 relative overflow-hidden py-12">
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent mb-4">
-            Estado de Servicios de Steam
-          </h1>
-          <p className="text-xl text-slate-300 font-light">
-            Verifica el estado actual de los servidores y servicios de Steam.
-          </p>
-        </div>
-
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="h-16 w-16 text-blue-400 animate-spin mb-6" />
-            <p className="text-white text-2xl">Cargando estado de servicios...</p>
-          </div>
-        )}
-
-        {error && (
-          <Alert variant="destructive" className="max-w-2xl mx-auto bg-red-500/10 border-red-500/20 text-red-300">
-            <XCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {statusData && !isLoading && !error && (
-          <div className="space-y-8">
-            <div className="flex justify-center items-center gap-4 text-slate-400 text-sm mb-8">
-              <Clock className="h-4 w-4" />
-              <span>Última actualización: {new Date(statusData.timestamp).toLocaleString()}</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-purple-950 flex items-center justify-center p-4">
+      <Card className={`w-full max-w-md bg-white/5 backdrop-blur-xl border text-white shadow-lg ${status ? getStatusColor(status.status) : 'border-white/10'}`}>
+        <CardHeader className="text-center">
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            Estado del Servicio
+          </CardTitle>
+          <p className="text-slate-300 mt-2">Información en tiempo real sobre la disponibilidad de la API de Steam.</p>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center gap-6">
+          {isLoading ? (
+            <div className="text-center">
+              <Loader2 className="h-12 w-12 text-blue-400 animate-spin mx-auto mb-4" />
+              <p className="text-xl text-white">Cargando estado...</p>
+            </div>
+          ) : status ? (
+            <>
+              <div className="text-center">
+                {getStatusIcon(status.status)}
+                <h2 className={`text-2xl font-bold mt-4 ${status.status === 'operational' ? 'text-green-400' : status.status === 'degraded' ? 'text-yellow-400' : 'text-red-400'}`}>
+                  {status.status === "operational" && "Operacional"}
+                  {status.status === "degraded" && "Rendimiento Degradado"}
+                  {status.status === "offline" && "Fuera de Línea"}
+                </h2>
+                <p className="text-slate-300 mt-2">{status.message}</p>
+                <p className="text-sm text-slate-400 mt-1">
+                  Última actualización: {new Date(status.timestamp).toLocaleString()}
+                </p>
+              </div>
               <Button
-                variant="outline"
-                size="sm"
                 onClick={fetchStatus}
-                disabled={isLoading}
-                className="border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-300 px-4 py-2 rounded-full text-white bg-transparent"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl text-lg transition-all duration-300 hover:scale-105"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualizar
+                <RefreshCcw className="h-5 w-5 mr-2" />
+                Actualizar Estado
+              </Button>
+            </>
+          ) : (
+            <div className="text-center">
+              <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-red-400 mt-4">Error</h2>
+              <p className="text-slate-300 mt-2">{error || "No se pudo cargar el estado del servicio."}</p>
+              <Button
+                onClick={fetchStatus}
+                className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl text-lg transition-all duration-300 hover:scale-105"
+              >
+                <RefreshCcw className="h-5 w-5 mr-2" />
+                Reintentar
               </Button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {statusData.services.map((service, index) => (
-                <Card
-                  key={service.name}
-                  className="group relative overflow-hidden bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                    <CardTitle className="text-lg font-semibold text-white">{service.name}</CardTitle>
-                    <Badge
-                      className={`${getStatusColor(service.status)} text-white font-semibold px-3 py-1 rounded-full flex items-center gap-1`}
-                    >
-                      {getStatusIcon(service.status)}
-                      {service.status}
-                    </Badge>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-slate-300 text-sm">{service.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

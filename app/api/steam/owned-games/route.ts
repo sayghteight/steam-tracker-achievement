@@ -1,53 +1,40 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
+import { NextRequest, NextResponse } from "next/server"
+
+const STEAM_API_KEY = process.env.STEAM_API_KEY
 
 export async function GET(request: NextRequest) {
-  const STEAM_API_KEY = process.env.STEAM_API_KEY
+  const { searchParams } = new URL(request.url)
+  const steamId = searchParams.get("steamId")
+
+  if (!steamId) {
+    return NextResponse.json({ error: "Steam ID is required" }, { status: 400 })
+  }
 
   if (!STEAM_API_KEY) {
-    return NextResponse.json({ error: "Steam API Key no configurada" }, { status: 500 })
+    return NextResponse.json({ error: "Steam API Key not configured" }, { status: 500 })
   }
 
   try {
-    // Obtener usuario autenticado
-    const cookieStore = cookies()
-    const userCookie = cookieStore.get("steam_user")
-
-    if (!userCookie) {
-      return NextResponse.json({ error: "Usuario no autenticado" }, { status: 401 })
-    }
-
-    const user = JSON.parse(userCookie.value)
-    const steamId = user.steamId
-
-    // Obtener juegos del usuario
-    const gamesResponse = await fetch(
-      `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_API_KEY}&steamid=${steamId}&include_appinfo=1&include_played_free_games=1&format=json`,
+    const response = await fetch(
+      `http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`,
     )
+    const data = await response.json()
 
-    if (!gamesResponse.ok) {
-      throw new Error("Error obteniendo juegos del usuario")
+    if (data.response && data.response.games) {
+      const games = data.response.games.map((game: any) => ({
+        appId: game.appid,
+        name: game.name,
+        playtimeForever: game.playtime_forever,
+        imgIconUrl: `http://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_icon_url}.jpg`,
+        imgLogoUrl: `http://media.steampowered.com/steamcommunity/public/images/apps/${game.appid}/${game.img_logo_url}.jpg`,
+        hasCommunityVisibleStats: game.has_community_visible_stats || false,
+      }))
+      return NextResponse.json({ games })
+    } else {
+      return NextResponse.json({ games: [] })
     }
-
-    const gamesData = await gamesResponse.json()
-    const games = gamesData.response?.games || []
-
-    // Formatear juegos
-    const formattedGames = games.map((game: any) => ({
-      id: game.appid.toString(),
-      name: game.name,
-      playtime: game.playtime_forever || 0,
-      playtime2weeks: game.playtime_2weeks || 0,
-      image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.appid}/header.jpg`,
-      lastPlayed: game.rtime_last_played ? new Date(game.rtime_last_played * 1000).toISOString() : null,
-    }))
-
-    return NextResponse.json({
-      games: formattedGames,
-      totalGames: games.length,
-    })
   } catch (error) {
     console.error("Error fetching owned games:", error)
-    return NextResponse.json({ error: "Error al obtener juegos del usuario" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch owned games" }, { status: 500 })
   }
 }
