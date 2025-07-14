@@ -14,27 +14,29 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     if (gameData.error || !gameData.game) {
       return new ImageResponse(
-        <div
-          style={{
-            display: "flex",
-            fontSize: 24,
-            color: "white",
-            background: "linear-gradient(to right, #ef4444, #f97316)",
-            width: "100%",
-            height: "100%",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 20,
-          }}
-        >
-          Error al cargar el juego
-        </div>,
+        (
+          <div
+            style={{
+              display: "flex",
+              fontSize: 24,
+              color: "white",
+              backgroundImage: "linear-gradient(to right, #ef4444, #f97316)",
+              width: "600px",
+              height: "300px",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "20px",
+            }}
+          >
+            Error al cargar el juego
+          </div>
+        ),
         {
           width: 600,
           height: 300,
         },
-      )
+      );
     }
 
     const gameName = gameData.game.name
