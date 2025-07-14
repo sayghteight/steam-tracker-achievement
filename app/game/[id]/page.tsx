@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -54,6 +54,7 @@ interface Achievement {
   hidden: boolean
   percentage?: number
   rarity?: string
+  achieved: boolean
 }
 
 interface Game {
@@ -77,13 +78,14 @@ export default function GamePage() {
   const gameId = params.id as string
   const { toast } = useToast()
 
+  const [userSteamId, setUserSteamId] = useState<string | null>(null)
   const [game, setGame] = useState<Game | null>(null)
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [completedAchievements, setCompletedAchievements] = useState<Set<string>>(new Set())
   const [isLoadingGame, setIsLoadingGame] = useState(true)
   const [isLoadingAchievements, setIsLoadingAchievements] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isClient, setIsClient] = useState(false) // Estado para verificar si estamos en el cliente
+  const [isClient, setIsClient] = useState(false)
 
   // UI State
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
@@ -97,7 +99,11 @@ export default function GamePage() {
   const [badgeLoading, setBadgeLoading] = useState(false)
 
   useEffect(() => {
-    setIsClient(true) // Marcar que estamos en el cliente una vez montado
+    setIsClient(true)
+    const storedSteamId = localStorage.getItem("steamId")
+    if (storedSteamId) {
+      setUserSteamId(storedSteamId)
+    }
   }, [])
 
   useEffect(() => {
@@ -122,40 +128,47 @@ export default function GamePage() {
     fetchGame()
   }, [gameId])
 
-  useEffect(() => {
-    const fetchAchievements = async () => {
-      try {
-        const response = await fetch(`/api/steam/achievements/${gameId}`)
-        const data = await response.json()
+  const fetchAchievements = useCallback(async () => {
+    if (!userSteamId) {
+      setIsLoadingAchievements(false)
+      return
+    }
 
-        if (data.error) {
-          setError(data.error)
-        } else {
-          setAchievements(data.achievements || [])
+    try {
+      const response = await fetch(`/api/steam/achievements/${gameId}?steamId=${userSteamId}`)
+      const data = await response.json()
+
+      if (data.error) {
+        setError(data.error)
+      } else {
+        setAchievements(data.achievements || [])
+        const initialCompleted = new Set(
+          data.achievements.filter((ach: Achievement) => ach.achieved).map((ach: Achievement) => ach.id),
+        )
+        setCompletedAchievements(initialCompleted)
+
+        if (isClient) {
+          const generalProgress = JSON.parse(localStorage.getItem("steamAchievementProgress") || "{}")
+          generalProgress[gameId] = initialCompleted.size
+          localStorage.setItem("steamAchievementProgress", JSON.stringify(generalProgress))
         }
-      } catch (error) {
-        console.error("Error fetching achievements:", error)
-        setError("Error al cargar los logros")
-      } finally {
-        setIsLoadingAchievements(false)
       }
+    } catch (error) {
+      console.error("Error fetching achievements:", error)
+      setError("Error al cargar los logros")
+    } finally {
+      setIsLoadingAchievements(false)
     }
-
-    fetchAchievements()
-  }, [gameId])
+  }, [gameId, userSteamId, isClient])
 
   useEffect(() => {
-    if (isClient) {
-      // Solo acceder a localStorage en el cliente
-      const savedProgress = localStorage.getItem(`achievements_${gameId}`)
-      if (savedProgress) {
-        setCompletedAchievements(new Set(JSON.parse(savedProgress)))
-      }
+    if (userSteamId) {
+      fetchAchievements()
     }
-  }, [gameId, isClient])
+  }, [userSteamId, fetchAchievements])
 
   const toggleAchievement = (achievementId: string) => {
-    if (!isClient) return // Asegurarse de que estamos en el cliente antes de usar localStorage
+    if (!isClient) return
 
     const newCompleted = new Set(completedAchievements)
     if (newCompleted.has(achievementId)) {
@@ -165,14 +178,12 @@ export default function GamePage() {
     }
 
     setCompletedAchievements(newCompleted)
-    localStorage.setItem(`achievements_${gameId}`, JSON.stringify([...newCompleted]))
 
     const generalProgress = JSON.parse(localStorage.getItem("steamAchievementProgress") || "{}")
     generalProgress[gameId] = newCompleted.size
     localStorage.setItem("steamAchievementProgress", JSON.stringify(generalProgress))
   }
 
-  // Filtrar y ordenar logros
   const filteredAndSortedAchievements = achievements
     .filter((achievement) => {
       if (
@@ -189,9 +200,9 @@ export default function GamePage() {
 
       switch (filterBy) {
         case "completed":
-          return completedAchievements.has(achievement.id)
+          return achievement.achieved
         case "pending":
-          return !completedAchievements.has(achievement.id)
+          return !achievement.achieved
         case "common":
         case "rare":
         case "epic":
@@ -207,23 +218,23 @@ export default function GamePage() {
         case "name":
           return a.name.localeCompare(b.name)
         case "rarity":
-          const rarityOrder = { mythic: 0, legendary: 1, epic: 2, rare: 3, uncommon: 4, common: 5 }
+          const rarityOrder = { mythic: 0, legendary: 1, epic: 2, rare: 3, common: 4 }
           return (
-            (rarityOrder[a.rarity as keyof typeof rarityOrder] || 6) -
-            (rarityOrder[b.rarity as keyof typeof rarityOrder] || 6)
+            (rarityOrder[a.rarity as keyof typeof rarityOrder] || 5) -
+            (rarityOrder[b.rarity as keyof typeof rarityOrder] || 5)
           )
         case "percentage":
           return (a.percentage || 0) - (b.percentage || 0)
         case "completion":
-          const aCompleted = completedAchievements.has(a.id) ? 1 : 0
-          const bCompleted = completedAchievements.has(b.id) ? 1 : 0
+          const aCompleted = a.achieved ? 1 : 0
+          const bCompleted = b.achieved ? 1 : 0
           return bCompleted - aCompleted
         default:
           return 0
       }
     })
 
-  if (isLoadingGame) {
+  if (isLoadingGame || isLoadingAchievements) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-purple-950 flex items-center justify-center">
         <div className="text-center">
@@ -231,7 +242,7 @@ export default function GamePage() {
             <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl animate-pulse"></div>
             <Loader2 className="h-12 w-12 text-blue-400 animate-spin mx-auto mb-6 relative z-10" />
           </div>
-          <p className="text-white text-xl">Cargando juego...</p>
+          <p className="text-white text-xl">Cargando datos del juego y logros...</p>
         </div>
       </div>
     )
@@ -288,7 +299,7 @@ export default function GamePage() {
       achievements: achievements.map((achievement) => ({
         name: achievement.name,
         description: achievement.description,
-        completed: completedAchievements.has(achievement.id),
+        completed: achievement.achieved,
         rarity: achievement.rarity,
         percentage: achievement.percentage,
       })),
@@ -310,17 +321,15 @@ export default function GamePage() {
 
       try {
         const currentOrigin = window.location.origin
-        // Asegurarse de que el nombre del juego esté codificado correctamente en la URL
         const encodedGameName = encodeURIComponent(game.name)
-        const badgeApiUrl = `${currentOrigin}/api/steam/badge/${gameId}?gameName=${encodedGameName}`
+        const encodedGameLogoUrl = encodeURIComponent(game.image)
+        const badgeApiUrl = `${currentOrigin}/api/steam/badge/${gameId}?gameName=${encodedGameName}&gameLogoUrl=${encodedGameLogoUrl}`
 
-        // Verificar que la URL del badge es válida
         const response = await fetch(badgeApiUrl)
         if (!response.ok) {
           throw new Error(`Error al generar el badge: ${response.statusText}`)
         }
 
-        // Establecer la URL del badge
         setBadgeUrl(badgeApiUrl)
       } catch (error) {
         console.error("Error al generar el badge:", error)
@@ -706,7 +715,7 @@ export default function GamePage() {
                     }
                   >
                     {filteredAndSortedAchievements.map((achievement, index) => {
-                      const isCompleted = completedAchievements.has(achievement.id)
+                      const isCompleted = achievement.achieved
 
                       if (viewMode === "list") {
                         return (
@@ -941,11 +950,9 @@ export default function GamePage() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {["common", "rare", "epic", "legendary"].map((rarity) => {
+                        {["common", "rare", "epic", "legendary", "mythic"].map((rarity) => {
                           const rarityAchievements = achievements.filter((a) => a.rarity === rarity)
-                          const completedRarity = rarityAchievements.filter((a) =>
-                            completedAchievements.has(a.id),
-                          ).length
+                          const completedRarity = rarityAchievements.filter((a) => a.achieved).length
 
                           return (
                             <div
@@ -1096,22 +1103,22 @@ export default function GamePage() {
         </Dialog>
 
         <style jsx>{`
-          @keyframes fade-in {
-            from {
+            @keyframes fade-in {
+              from {
+                opacity: 0;
+                transform: translateY(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            
+            .animate-fade-in {
+              animation: fade-in 0.6s ease-out forwards;
               opacity: 0;
-              transform: translateY(20px);
             }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          .animate-fade-in {
-            animation: fade-in 0.6s ease-out forwards;
-            opacity: 0;
-          }
-        `}</style>
+          `}</style>
       </div>
     </TooltipProvider>
   )
