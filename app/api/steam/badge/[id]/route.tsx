@@ -9,13 +9,9 @@ export async function GET(request: NextRequest) {
   const gameName = searchParams.get("gameName") || "Juego Desconocido"
   const gameLogoUrl = searchParams.get("gameLogoUrl")
 
-  // Cargar la fuente (si es necesario, puedes usar una fuente de Google Fonts)
-  const interBold = fetch(new URL("../../../../public/Inter-Bold.ttf", import.meta.url)).then((res) =>
-    res.arrayBuffer(),
-  )
-  const interRegular = fetch(new URL("../../../../public/Inter-Regular.ttf", import.meta.url)).then((res) =>
-    res.arrayBuffer(),
-  )
+  // Cargar la fuente desde la ruta pública
+  const interBold = fetch(new URL("/Inter-Bold.ttf", request.url)).then((res) => res.arrayBuffer())
+  const interRegular = fetch(new URL("/Inter-Regular.ttf", request.url)).then((res) => res.arrayBuffer())
 
   const [interBoldData, interRegularData] = await Promise.all([interBold, interRegular])
 

@@ -1,134 +1,75 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+const STEAM_API_KEY = process.env.STEAM_API_KEY
+
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const gameId = params.id
-  const steamId = request.nextUrl.searchParams.get("steamId")
-  const STEAM_API_KEY = process.env.STEAM_API_KEY
 
   if (!STEAM_API_KEY) {
-    return NextResponse.json({ error: "STEAM_API_KEY no está configurada" }, { status: 500 })
+    return NextResponse.json({ error: "STEAM_API_KEY no está configurada." }, { status: 500 })
   }
 
   if (!gameId) {
-    return NextResponse.json({ error: "ID del juego no proporcionado" }, { status: 400 })
-  }
-
-  if (!steamId) {
-    return NextResponse.json({ error: "Steam ID del usuario no proporcionado" }, { status: 400 })
+    return NextResponse.json({ error: "ID del juego no proporcionado." }, { status: 400 })
   }
 
   try {
-    // 1. Obtener el esquema de logros del juego (nombres, descripciones, iconos, porcentajes globales)
-    const schemaResponse = await fetch(
+    // Fetch player achievements
+    const playerAchievementsRes = await fetch(
+      `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=${gameId}&key=${STEAM_API_KEY}&steamid=76561198067000000`, // Replace with dynamic steamid later
+    )
+    const playerAchievementsData = await playerAchievementsRes.json()
+
+    // Fetch global achievement percentages
+    const globalAchievementsRes = await fetch(
+      `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${gameId}`,
+    )
+    const globalAchievementsData = await globalAchievementsRes.json()
+
+    // Fetch game schema (achievement details like name, description, icons)
+    const gameSchemaRes = await fetch(
       `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${STEAM_API_KEY}&appid=${gameId}`,
     )
-    const schemaData = await schemaResponse.json()
+    const gameSchemaData = await gameSchemaRes.json()
 
     if (
-      !schemaResponse.ok ||
-      !schemaData ||
-      !schemaData.game ||
-      !schemaData.game.availableGameStats ||
-      !schemaData.game.availableGameStats.achievements
+      !playerAchievementsData?.playerstats ||
+      !globalAchievementsData?.achievementpercentages ||
+      !gameSchemaData?.game
     ) {
-      console.warn(`No se encontró esquema de logros para el juego ${gameId}. Intentando solo logros del jugador.`)
-      // Si no hay logros en el esquema, devolvemos un array vacío o manejamos según la lógica de la app
-      return NextResponse.json({ achievements: [] }, { status: 200 })
+      return NextResponse.json({ error: "Datos de logros no encontrados para este juego." }, { status: 404 })
     }
 
-    const gameAchievementsSchema = schemaData.game.availableGameStats.achievements || []
+    const playerAchievements = playerAchievementsData.playerstats.achievements || []
+    const globalPercentages = globalAchievementsData.achievementpercentages.achievements || []
+    const gameSchema = gameSchemaData.game
 
-    // 2. Obtener los logros del jugador para este juego
-    const playerAchievementsResponse = await fetch(
-      `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=${gameId}&key=${STEAM_API_KEY}&steamid=${steamId}`,
-    )
-    const playerAchievementsData = await playerAchievementsResponse.json()
-
-    if (
-      !playerAchievementsResponse.ok ||
-      !playerAchievementsData ||
-      !playerAchievementsData.playerstats ||
-      !playerAchievementsData.playerstats.achievements
-    ) {
-      console.warn(`No se encontraron logros del jugador para el juego ${gameId} y Steam ID ${steamId}.`)
-      // Si no hay logros del jugador, devolvemos solo los del esquema (sin estado de "achieved")
-      const achievementsWithRarity = await Promise.all(
-        gameAchievementsSchema.map(async (ach: any) => {
-          const rarityResponse = await fetch(
-            `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${gameId}&format=json`,
-          )
-          const rarityData = await rarityResponse.json()
-          const globalPercentage = rarityData?.achievementpercentages?.achievements?.find(
-            (p: any) => p.name === ach.apiname,
-          )?.percent
-
-          let rarity = "common"
-          if (globalPercentage !== undefined) {
-            if (globalPercentage < 5) rarity = "mythic"
-            else if (globalPercentage < 10) rarity = "legendary"
-            else if (globalPercentage < 20) rarity = "epic"
-            else if (globalPercentage < 40) rarity = "rare"
-            else rarity = "common"
-          }
-
-          return {
-            id: ach.apiname,
-            name: ach.displayName,
-            description: ach.description || "Logro secreto o sin descripción.",
-            icon: ach.icon,
-            iconGray: ach.icongray,
-            hidden: ach.hidden === 1,
-            percentage: globalPercentage,
-            rarity: rarity,
-            achieved: false, // Por defecto false si no hay datos del jugador
-          }
-        }),
+    const combinedAchievements = playerAchievements.map((playerAch: any) => {
+      const globalPercent = globalPercentages.find((globalAch: any) => globalAch.name === playerAch.apiname)
+      const schemaAch = gameSchema.availableGameStats?.achievements?.find(
+        (schemaAch: any) => schemaAch.apiname === playerAch.apiname,
       )
-      return NextResponse.json({ achievements: achievementsWithRarity }, { status: 200 })
-    }
 
-    const playerAchievements = playerAchievementsData.playerstats.achievements
+      return {
+        ...playerAch,
+        name: schemaAch?.displayName || playerAch.apiname,
+        description: schemaAch?.description || "No description available.",
+        icon: schemaAch?.icon || "/placeholder.svg",
+        icongray: schemaAch?.icon_gray || "/placeholder.svg",
+        hidden: schemaAch?.hidden || 0,
+        percent: globalPercent?.percent || 0,
+      }
+    })
 
-    // 3. Combinar los datos del esquema con los logros del jugador
-    const combinedAchievements = await Promise.all(
-      gameAchievementsSchema.map(async (schemaAch: any) => {
-        const playerAch = playerAchievements.find((pa: any) => pa.apiname === schemaAch.apiname)
-
-        // Obtener porcentaje global y calcular rareza
-        const rarityResponse = await fetch(
-          `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${gameId}&format=json`,
-        )
-        const rarityData = await rarityResponse.json()
-        const globalPercentage = rarityData?.achievementpercentages?.achievements?.find(
-          (p: any) => p.name === schemaAch.apiname,
-        )?.percent
-
-        let rarity = "common"
-        if (globalPercentage !== undefined) {
-          if (globalPercentage < 5) rarity = "mythic"
-          else if (globalPercentage < 10) rarity = "legendary"
-          else if (globalPercentage < 20) rarity = "epic"
-          else if (globalPercentage < 40) rarity = "rare"
-          else rarity = "common"
-        }
-
-        return {
-          id: schemaAch.apiname,
-          name: schemaAch.displayName,
-          description: schemaAch.description || "Logro secreto o sin descripción.",
-          icon: schemaAch.icon,
-          iconGray: schemaAch.icongray,
-          hidden: schemaAch.hidden === 1,
-          percentage: globalPercentage,
-          rarity: rarity,
-          achieved: playerAch ? playerAch.achieved === 1 : false, // Si no se encuentra en los logros del jugador, se asume no conseguido
-        }
-      }),
-    )
-
-    return NextResponse.json({ achievements: combinedAchievements }, { status: 200 })
+    return NextResponse.json({
+      game: {
+        gameName: gameSchema.gameName || "Nombre de juego desconocido",
+        gameLogoUrl: gameSchema.gameIcon || "/placeholder.svg", // Use gameIcon from schema
+        achievements: combinedAchievements,
+      },
+    })
   } catch (error) {
-    console.error("Error al obtener logros:", error)
-    return NextResponse.json({ error: "Error interno del servidor al obtener logros" }, { status: 500 })
+    console.error("Error fetching Steam achievements:", error)
+    return NextResponse.json({ error: "Error interno del servidor al obtener logros de Steam." }, { status: 500 })
   }
 }

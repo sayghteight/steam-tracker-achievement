@@ -7,14 +7,26 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: [
-      "steamcdn-a.akamaihd.net",
-      "cdn.cloudflare.steamstatic.com",
-      "avatars.akamai.steamstatic.com", // Para avatares de usuario
-      "media.steampowered.com" // Añadido para imágenes de juegos
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'steamcdn-a.akamaihd.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.cloudflare.steamstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.akamai.steamstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.steampowered.com',
+      },
     ],
     unoptimized: true,
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;
