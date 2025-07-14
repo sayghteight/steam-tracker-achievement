@@ -658,17 +658,9 @@ export default function HomePage() {
                     <CardTitle className="text-white mb-3 line-clamp-2 group-hover:text-blue-300 transition-colors duration-300 text-lg font-bold">
                       {game.name}
                     </CardTitle>
-                    <CardDescription className="text-slate-400 mb-4 line-clamp-3 leading-relaxed">
-                      {game.description}
-                    </CardDescription>
 
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        {game.price && (
-                          <Badge className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 font-semibold">
-                            {game.price}
-                          </Badge>
-                        )}
                         {game.owned && (
                           <div className="absolute top-2 left-2">
                             <Badge className="bg-gradient-to-r from-green-600/90 to-emerald-600/90 backdrop-blur-sm border border-white/20 text-white font-semibold text-xs">
@@ -753,24 +745,6 @@ export default function HomePage() {
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out forwards;
-          opacity: 0;
-        }
-      `}</style>
     </div>
   )
 }

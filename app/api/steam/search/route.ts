@@ -46,8 +46,6 @@ export async function GET(request: NextRequest) {
 
     const storeData = await storeResponse.json()
 
-    console.log(storeData.items)
-    
     // Filtrar solo juegos (type: 'app') y limitar resultados
     const games =
       storeData.items
@@ -57,8 +55,6 @@ export async function GET(request: NextRequest) {
           id: item.id.toString(),
           name: item.name,
           image: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
-          price: item.price?.final_formatted || "Gratis",
-          description: item.data.short_description || item.data.detailed_description,
           owned: ownedGameIds.includes(item.id.toString()), // Nuevo campo
         })) || []
 
