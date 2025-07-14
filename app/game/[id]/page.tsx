@@ -766,7 +766,7 @@ export default function GamePage() {
                                   <div className="flex items-center justify-between">
                                     {achievement.percentage !== undefined && (
                                       <Badge variant="outline" className="text-xs border-white/20">
-                                        {achievement.percentage.toFixed(1)}% jugadores
+                                        {Number(achievement.percentage).toFixed(1)}% jugadores
                                       </Badge>
                                     )}
                                     {isCompleted && (
@@ -815,7 +815,7 @@ export default function GamePage() {
                                         )}
                                         {achievement.percentage !== undefined && (
                                           <Badge className="bg-gradient-to-r from-blue-600 to-cyan-600">
-                                            📊 {achievement.percentage.toFixed(1)}% de jugadores
+                                            📊 {Number(achievement.percentage).toFixed(1)}% de jugadores
                                           </Badge>
                                         )}
                                         {isCompleted && (
@@ -912,7 +912,7 @@ export default function GamePage() {
                                 <div className="flex items-center justify-between">
                                   {achievement.percentage !== undefined && (
                                     <Badge className="bg-gradient-to-r from-slate-600 to-slate-700 border border-white/20 text-xs">
-                                      📊 {achievement.percentage.toFixed(1)}%
+                                      📊 {Number(achievement.percentage).toFixed(1)}%
                                     </Badge>
                                   )}
                                   {isCompleted && (
