@@ -26,14 +26,23 @@ import {
   Target,
   Award,
   Zap,
+  Copy,
 } from "lucide-react"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog" // Importar DialogDescription
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useToast } from "@/hooks/use-toast" // Importar useToast
 
 interface Achievement {
   id: string
@@ -65,6 +74,7 @@ type SortBy = "name" | "rarity" | "percentage" | "completion"
 export default function GamePage() {
   const params = useParams()
   const gameId = params.id as string
+  const { toast } = useToast() // Inicializar useToast
 
   const [game, setGame] = useState<Game | null>(null)
   const [achievements, setAchievements] = useState<Achievement[]>([])
@@ -80,6 +90,8 @@ export default function GamePage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null)
   const [showHidden, setShowHidden] = useState(false)
+  const [showShareDialog, setShowShareDialog] = useState(false) // Nuevo estado para el diálogo de compartir
+  const [badgeUrl, setBadgeUrl] = useState<string>("") // Nuevo estado para la URL del badge
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -279,6 +291,38 @@ export default function GamePage() {
     URL.revokeObjectURL(url)
   }
 
+  const handleSharePlatinum = () => {
+    if (isPlatinum) {
+      const currentOrigin = window.location.origin
+      const badgeApiUrl = `${currentOrigin}/api/steam/badge/${gameId}`
+      setBadgeUrl(badgeApiUrl)
+      setShowShareDialog(true)
+    } else {
+      toast({
+        title: "¡Aún no has conseguido el Platino!",
+        description: "Completa todos los logros para compartir tu Platino.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const copyBadgeUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(badgeUrl)
+      toast({
+        title: "Enlace copiado",
+        description: "El enlace del badge de Platino ha sido copiado al portapapeles.",
+      })
+    } catch (err) {
+      console.error("Error al copiar el enlace:", err)
+      toast({
+        title: "Error al copiar",
+        description: "No se pudo copiar el enlace. Inténtalo manualmente.",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-purple-950 relative overflow-hidden">
@@ -434,6 +478,7 @@ export default function GamePage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={handleSharePlatinum} // Usar la nueva función para compartir
                               className="border-white/20 hover:bg-white/10 hover:border-white/30 transition-all duration-300 bg-transparent"
                             >
                               <Share2 className="h-4 w-4 mr-2" />
@@ -767,7 +812,11 @@ export default function GamePage() {
                         >
                           {/* Glow Effect */}
                           <div
-                            className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                            className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                              isCompleted
+                                ? "bg-gradient-to-br from-green-500/5 to-emerald-500/5"
+                                : "bg-gradient-to-br from-blue-500/5 to-purple-500/5"
+                            }`}
                           ></div>
 
                           <CardContent className="p-6 relative z-10">
@@ -960,6 +1009,46 @@ export default function GamePage() {
             </div>
           )}
         </div>
+
+        {/* Share Platinum Dialog */}
+        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+          <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-white/20 max-w-xl">
+            <DialogHeader>
+              <DialogTitle className="text-white text-2xl flex items-center gap-2">
+                <Star className="h-6 w-6 text-yellow-400" />
+                ¡Comparte tu Platino!
+              </DialogTitle>
+              <DialogDescription className="text-slate-400">
+                Copia el enlace de tu badge de Platino para compartirlo donde quieras.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6">
+              {badgeUrl ? (
+                <>
+                  <div className="flex justify-center">
+                    <img
+                      src={badgeUrl || "/placeholder.svg"}
+                      alt="Platinum Achievement Badge"
+                      className="max-w-full h-auto rounded-lg border border-white/20 shadow-lg"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Input value={badgeUrl} readOnly className="flex-1 bg-white/10 border-white/20 text-white" />
+                    <Button
+                      onClick={copyBadgeUrl}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center text-slate-400">Generando badge...</div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <style jsx>{`
           @keyframes fade-in {
