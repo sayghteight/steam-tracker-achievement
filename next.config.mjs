@@ -7,26 +7,28 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'steamcdn-a.akamaihd.net',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cdn.cloudflare.steamstatic.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'avatars.akamai.steamstatic.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'media.steampowered.com',
-      },
+    domains: [
+      'shared.akamai.steamstatic.com',
+      'steamcdn-a.akamaihd.net',
+      'avatars.steamstatic.com',
+      'steamuserimages-a.akamaihd.net',
+      'cdn.cloudflare.steamstatic.com',
+      'cdn.akamai.steamstatic.com'
     ],
-    unoptimized: true,
+    unoptimized: true
   },
-};
+  experimental: {
+    serverComponentsExternalPackages: []
+  },
+  // Configuración para Vercel
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+  // Optimizaciones para build
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production'
+  }
+}
 
-export default nextConfig;
+export default nextConfig

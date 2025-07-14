@@ -1,75 +1,77 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const gameId = params.id
+  const appId = params.id
 
-  if (!STEAM_API_KEY) {
-    return NextResponse.json({ error: "STEAM_API_KEY no está configurada." }, { status: 500 })
+  if (!appId) {
+    return NextResponse.json({ error: "App ID is required" }, { status: 400 })
   }
 
-  if (!gameId) {
-    return NextResponse.json({ error: "ID del juego no proporcionado." }, { status: 400 })
+  if (!STEAM_API_KEY) {
+    return NextResponse.json({ error: "Steam API Key not configured" }, { status: 500 })
   }
 
   try {
-    // Fetch player achievements
-    const playerAchievementsRes = await fetch(
-      `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=${gameId}&key=${STEAM_API_KEY}&steamid=76561198067000000`, // Replace with dynamic steamid later
-    )
-    const playerAchievementsData = await playerAchievementsRes.json()
-
     // Fetch global achievement percentages
-    const globalAchievementsRes = await fetch(
-      `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${gameId}`,
+    const globalAchievementsResponse = await fetch(
+      `http://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${appId}&format=json`,
     )
-    const globalAchievementsData = await globalAchievementsRes.json()
+    const globalAchievementsData = await globalAchievementsResponse.json()
+    const globalPercentages =
+      globalAchievementsData?.achievementpercentages?.achievements?.reduce((acc: any, ach: any) => {
+        acc[ach.name] = ach.percent
+        return acc
+      }, {}) || {}
 
-    // Fetch game schema (achievement details like name, description, icons)
-    const gameSchemaRes = await fetch(
-      `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${STEAM_API_KEY}&appid=${gameId}`,
+    // Fetch schema for achievement details (name, description, icons)
+    const schemaResponse = await fetch(
+      `http://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${STEAM_API_KEY}&appid=${appId}&l=spanish`,
     )
-    const gameSchemaData = await gameSchemaRes.json()
+    const schemaData = await schemaResponse.json()
 
-    if (
-      !playerAchievementsData?.playerstats ||
-      !globalAchievementsData?.achievementpercentages ||
-      !gameSchemaData?.game
-    ) {
-      return NextResponse.json({ error: "Datos de logros no encontrados para este juego." }, { status: 404 })
+    if (!schemaData || !schemaData.game || !schemaData.game.availableGameStats) {
+      return NextResponse.json({ achievements: [] })
     }
 
-    const playerAchievements = playerAchievementsData.playerstats.achievements || []
-    const globalPercentages = globalAchievementsData.achievementpercentages.achievements || []
-    const gameSchema = gameSchemaData.game
+    const gameAchievements = schemaData.game.availableGameStats.achievements || []
 
-    const combinedAchievements = playerAchievements.map((playerAch: any) => {
-      const globalPercent = globalPercentages.find((globalAch: any) => globalAch.name === playerAch.apiname)
-      const schemaAch = gameSchema.availableGameStats?.achievements?.find(
-        (schemaAch: any) => schemaAch.apiname === playerAch.apiname,
-      )
+    const achievementsWithDetails = gameAchievements.map((ach: any) => {
+      const percentage = globalPercentages[ach.name]
+      let rarity = "common" // Default rarity
+
+      if (percentage !== undefined) {
+        if (percentage < 5) {
+          rarity = "mythic"
+        } else if (percentage < 10) {
+          rarity = "legendary"
+        } else if (percentage < 20) {
+          rarity = "epic"
+        } else if (percentage < 40) {
+          rarity = "rare"
+        } else if (percentage < 70) {
+          rarity = "uncommon"
+        } else {
+          rarity = "common"
+        }
+      }
 
       return {
-        ...playerAch,
-        name: schemaAch?.displayName || playerAch.apiname,
-        description: schemaAch?.description || "No description available.",
-        icon: schemaAch?.icon || "/placeholder.svg",
-        icongray: schemaAch?.icon_gray || "/placeholder.svg",
-        hidden: schemaAch?.hidden || 0,
-        percent: globalPercent?.percent || 0,
+        id: ach.name,
+        name: ach.displayName,
+        description: ach.description || "No description available.",
+        icon: ach.icon,
+        iconGray: ach.icongray,
+        hidden: ach.hidden === 1,
+        percentage: percentage,
+        rarity: rarity,
       }
     })
 
-    return NextResponse.json({
-      game: {
-        gameName: gameSchema.gameName || "Nombre de juego desconocido",
-        gameLogoUrl: gameSchema.gameIcon || "/placeholder.svg", // Use gameIcon from schema
-        achievements: combinedAchievements,
-      },
-    })
+    return NextResponse.json({ achievements: achievementsWithDetails })
   } catch (error) {
-    console.error("Error fetching Steam achievements:", error)
-    return NextResponse.json({ error: "Error interno del servidor al obtener logros de Steam." }, { status: 500 })
+    console.error("Error fetching achievements:", error)
+    return NextResponse.json({ error: "Failed to fetch achievements" }, { status: 500 })
   }
 }
